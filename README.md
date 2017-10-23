@@ -152,7 +152,7 @@ The list contains the below fields for each of the uploaded file:
 
 	
 	
-![Alt text](/img2.jpg?raw=true)
+![Alt text](/img2.jpg)
 
  
                                          Fig 2. Main page of Cloud Cabinet application for CRUD operations
