@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cloud Cabinet</title>
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link   rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <!-- Socket IO plugin -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- AWS SDK to access S3 -->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.132.0.min.js"></script> 
+  
+
+  <!-- CSS Style -->
+  <style>
+  /* Set a style for body with background image */
+  body  {
+    background-image: url("https://www.bluehost.com/blog/wp-content/uploads/2015/09/cloud-wallpaper-hd-background-5-e1440104802804-1.png");
+    background-color: #cccccc;
+    /*width: 40%;*/
+  }
+  /* Set a style for heading */
+  h1 {
+    text-align: center;
+    font-family: "verdana";
+  }
+  .welcome{
+    background-color: LightGray;
+    color: #555555;
+    text-align: center;
+    font-size: 150%;
+  }
+  /*Table styles*/
+  table, td, th {
+    border: 1px solid black;
+  }
+  th,td {
+    text-align: center;
+  }
+  table{
+    width: 400px;
+  }
+  .center {
+    margin: auto;
+    width: 24%;
+    padding: 10px;
+  }
+
+  /* Full-width input fields */
+  input[type=text], input[type=password] {
+    width: 30%;
+    padding: 8px 15px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  /* Set a style for buttons */
+  .button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* Extra styles for the cancel button */
+  .cancelbtn {
+    padding: 14px 20px;
+    background-color: #f44336;
+  }
+
+  .cancelbtn,.loginbtn {
+    float: left;
+    width: 15%;
+  }
+
+  /* Float cancel and signup buttons and add an equal width */
+  .cancelbtn,.signupbtn {
+    float: left;
+    width: 15%;
+  }
+
+  /* Add padding to container elements */
+  .container {
+    padding: 16px;
+  }
+
+  /* Clear floats */
+  .clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+  }
+
+  /* Change styles for cancel button and signup button on extra small screens */
+  @media screen and (max-width: 300px) {
+    .cancelbtn, .signupbtn {
+     width: 100%;
+   }
+ }
+
+ a {
+  color: #55aaff;
+}
+
+.loginColumn, .signupColumn {
+  padding: 10em;
+  width: 10%;
+}
+.loginColumn {
+  position: absolute;
+  top: 0px;
+  right: 50%;
+  bottom: 0px;
+  left: 0px;
+
+  text-align: left;
+  padding-top: 11em;
+}
+
+.loginColumn p {
+  width: 50%;
+  float:right;
+}
+
+.signupColumn {
+  position: relative;
+  top:0px;
+  right: 0px;
+  bottom: 0px;
+  left: 50%;
+
+  text-align: left;
+  padding-top: 2em;
+}
+
+.footer{  
+ text-align: center;    
+ bottom: 0px; 
+ width: 100%;
+}  
+</style>
+
+<!-- Javascript functions -->
+<script>
+  var folderBucketName = 'sjsucloud';
+  var bucketRegion = 'us-east-2';
+  var IdentityPoolId = '';
+  var socket = io();
+
+  AWS.config.update({
+    region: bucketRegion,
+    credentials: new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: IdentityPoolId
+    })
+  });
+
+  var s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    params: {Bucket: folderBucketName}
+  });
+
+
+//Creating new folder in S3 on Signup
+function CreateUserFolder(foldername){
+
+  var foldernameKey = encodeURIComponent(foldername) + '/';
+
+  s3.headObject({Key: foldernameKey}, function(err, data) {
+    if (!err) {
+      return console.log('Folder already exists.');
+    }
+    if (err.code !== 'NotFound') {
+      return console.log('There was an error creating your user folder: ' + err.message);
+    }
+    s3.putObject({Key: foldernameKey}, function(err, data) {
+      if (err) {
+        return console.log('There was an error creating your user folder: ' + err.message);
+      }
+      UpdateTable(foldername);
+    });
+  });
+
+}
+
+
+// Signup function for new users 
+function signup() {
+//GetData from User name feild and verify if there is any duplicate entry
+userdetails = {username : uname1.value.trim().toLowerCase(),firstname : fname1.value.trim(),lastname : lname1.value.trim(), password : pswd1.value.trim() ,passwordReentry: pswd11.value.trim()};
+
+if(userdetails.username.length==0 || userdetails.firstname.length==0 || userdetails.lastname.length==0 || userdetails.password.length==0|| userdetails.passwordReentry.length==0){
+  document.getElementById('unameExist').innerHTML  =  "Required feilds missing!";
+return;
+}
+if ((userdetails.username).indexOf('/') !== -1) {
+
+  document.getElementById('unameExist').innerHTML = "Username names cannot contain slashes.";
+  return ;
+}
+
+if(userdetails.password == userdetails.passwordReentry){
+
+  socket.emit('sendsignup',userdetails);
+
+  socket.once('sendsignup', function(result) {
+   if(result != 'Duplicate Entry' && result != 'error' )
+   {
+    var el =document.getElementById('fname');
+    CreateUserFolder(userdetails.username);
+    var main = document.getElementById("mainpage");
+    var login = document.getElementById("loginpage");
+    if(main.style.display == 'none'){
+     main.style.display = 'block';
+     login.style.display = 'none';
+     el.innerHTML = result;
+     alert("User account created!!");
+   }
+   UpdateTable(userdetails.username.toLowerCase());  
+ }
+ else{
+  document.getElementById('unameExist').innerHTML  = 'Username already exists.';
+}
+});
+}
+else
+{
+  document.getElementById('unameExist').innerHTML = "Please enter the same password again.";
+}
+
+
+}
+
+// Funtion on click of Cancel button in Login Page
+function cancel() { 
+  uname1.value="";fname1.value="";lname1.value="";
+  pswd1.value="";pswd11.value="";uname.value="";pswd.value="";
+}
+
+// Funtion for Login Authentication
+function login() { 
+
+  var username = (uname.value.trim()).toLowerCase();
+  var password = pswd.value.trim();
+
+  var logindetails = [
+  username,
+  password
+  ];
+
+  var el =document.getElementById('fname');
+  var auth =document.getElementById('incorrectCred');
+
+
+if(username.length==0|| password.length==0 ){
+    auth.innerHTML = "Required feilds missing!";
+return;
+}
+
+
+  if ((username).indexOf('/') !== -1) {
+    auth.innerHTML = "Username names cannot contain slashes.";
+    return ;
+  }
+  
+  socket.emit('send',logindetails);
+
+  socket.once('send', function(result) {
+   if(result != 'error')
+   {
+    var mainPg = document.getElementById("mainpage");
+    var loginPg = document.getElementById("loginpage");
+    if(mainPg.style.display == 'none'){
+     mainPg.style.display = 'block';
+     loginPg.style.display = 'none';
+     el.innerHTML = result;
+
+   }
+
+   UpdateTable(username); 
+ }
+ else{
+  auth.innerHTML = 'Incorrect Username/Password';
+
+}
+});
+}
+
+
+/////////////////////////////////////////////////////VIEW FILES/////////////////////////////////////////////////////////////////////////
+function UpdateTable(userName){
+  socket.emit('sendlistfile', userName.toLowerCase());
+  socket.once('sendlistfile', function(result) {
+    tableupdate(userName.toLowerCase(),result);
+  });
+}
+
+function tableupdate(userName,tabledata){
+
+  var foldernameKey = encodeURIComponent(userName) + '//';
+  s3.listObjects({Prefix: foldernameKey}, function(err, data) {
+    if (err) {
+      return alert('There was an error viewing your folder: ' + err.message);
+    }
+
+      // `this` references the AWS.Response instance that represents the response
+      var href = this.request.httpRequest.endpoint.href;
+      var bucketUrl = href + folderBucketName + '/';
+      var descr;
+      var createTime;
+      var updateTime;
+      var files = data.Contents.map(function(file) {
+        var fileKey = file.Key;
+        var downloadUrl = "http://d2x2vs1nskj5ao.cloudfront.net/" + decodeURIComponent(fileKey);
+        var filepath = fileKey.replace(foldernameKey, '');
+        for (i = 0; i < tabledata.length; i++){
+          if(tabledata[i].filename == filepath){
+            descr = tabledata[i].filedescription;
+            createTime = new Date(tabledata[i].filecreatetime);
+            // createTime.setHours(createTime.getHours() - 7);
+            updateTime = new Date(tabledata[i].fileupdatetime);
+            // updateTime.setHours(updateTime.getHours() - 7);
+            break;
+          }
+        }
+
+        return getHtml([
+          '<tr>',
+          '<td>', 
+          fileKey.replace(foldernameKey, ''),
+          '</td>',
+          '<td>',
+          '<p>',
+          descr,
+          '<p>',
+          '</td>',
+          '<td>',
+          createTime.toLocaleString(),
+          '</td>',
+          '<td>',
+          updateTime.toLocaleString(),
+          '</td>',
+          '<td>',
+          '<p>',
+          '<a href="' + downloadUrl + '">',
+          // 'Click here to download file',
+          '<span class="glyphicon glyphicon-download-alt"></span>',
+          '</a>',
+          '</p>',
+          '</td>',
+          '<td>',
+          '<button type="button" class="btn btn-default btn-sm" onclick="deleteFile(\'' + userName + "','" + fileKey + '\')">',
+          '<a href="#">',
+          '<span class="glyphicon glyphicon-trash">',
+          'Delete',
+          '</span>',
+          '</a>',
+          '</button>',
+          '</td>',
+          '</tr>'
+          ]);
+
+      });
+
+
+      var htmlTemplate = [
+      '<div class="row">',
+      '<div class="col-sm-12">',
+      '<table id="productTable" class="table table-bordered table-condensed table table-hover table-responsive">',
+      '<thead>',
+      '<tr class="success">',
+      '<th>File Name</th>',
+      '<th>File Description</th>',
+      '<th>File Creation Time</th>',
+      '<th>File Update Time</th>',
+      '<th>File Download</th>',
+      '<th>Delete File</th>',
+      '</tr>',
+      '</thead>',
+
+      '<div>',
+      getHtml(files),
+      '</div>',
+
+      '</table>',
+      '</div>',
+      '</div>',
+
+      '<div>',
+      '<input id="fileupload" type="file" accept="*">',
+      'File Description:',
+      '<input type="text" style="width:300px; height:30px;" name="File Description" id="description" placeholder="Description">',
+      '<button id="addfile" class="btn btn-primary" onclick="addFile(\'' + userName +'\')">',
+      'Upload File',
+      '</button>',
+      '<br/>',
+      '</div>',
+      ]
+
+      document.getElementById('app').innerHTML = getHtml(htmlTemplate);
+
+    });
+}
+
+
+/////////////////////////////////////////////////////ADD FILE/////////////////////////////////////////////////////////////////////////
+
+function addFile(userName) {
+  var files = document.getElementById('fileupload').files;
+  var file = files[0];
+  var fileName = file.name;
+  var foldernameKey = encodeURIComponent(userName) + '//';
+  var fileKey = foldernameKey + fileName;
+  var downloadUrl = "http://d2x2vs1nskj5ao.cloudfront.net/" + fileKey;
+  var currentTime = new Date();
+  var updateTime = new Date();
+  if (files.length == 0) {
+    return alert('Error: Please choose a file to upload first!');
+  }
+  
+  if (file.size > 10485760) {
+   return alert('Error: File Size exceeded 10MB! Choose another file.');
+ }
+
+ s3.upload({
+  Key: fileKey,
+  Body: file,
+  ACL: 'public-read'
+}, function(err, data) {
+  if (err) {
+    return alert('There was an error uploading your file: ', err.message);
+  }
+
+  var filedetails = [
+  fileName,
+  userName,
+  description.value,
+  userName,
+  currentTime, 
+  updateTime,
+  downloadUrl
+  ];
+
+  socket.emit('sendufile',filedetails);
+  socket.on('sendufile', function(result) {
+    if(result=='ok'){
+
+      UpdateTable(userName);
+
+    }
+  });
+  alert('Successfully uploaded file.');
+});
+}
+
+/////////////////////////////////////////////////////DELETE FILE////////////////////////////////////////////////////////////////////////
+
+function deleteFile(userName, fileKey) {
+
+  var filedel;
+  var foldernameKey = encodeURIComponent(userName) + '//';
+
+  s3.deleteObject({Key: fileKey}, function(err, data) {
+    if (err) {
+      return alert('There was an error deleting your file: ', err.message);
+    }
+    
+    filedel = fileKey.replace(foldernameKey, '');
+    
+    socket.emit('senddel',{filename:filedel,username:userName});
+    socket.on('senddel', function(result) {
+      if(result=='ok'){
+
+       UpdateTable(userName);
+     }
+   });
+    alert('Successfully deleted file.');
+  });
+}
+
+
+function getHtml(template) {
+  return template.join('\n');
+}
+
+</script>
+</head>
+
+<body>
+
+  <!-- LOG IN -->
+
+  <div id="loginpage">  
+    <div class="loginColumn">
+     <div class="imgcontainer">
+      <img src="http://www.coworkinglogin.it/wp-content/uploads/2015/02/LOGIN_LOGO_WEB.png" alt="Login" class="Login" width="280" height="85">
+      <br/>
+      <br/>
+    </div>
+
+    <div class="container">
+      <label><b>Username</b></label>
+      <br/>
+      <input id="uname" type="text" placeholder="Enter Username" name="uname" required>
+      <br/>
+      <br/>
+
+      <label><b>Password</b></label>
+      <br/>
+      <input id="pswd" type="password" placeholder="Enter Password" name="psw" required>
+
+      <br/>
+      <br/>
+
+      <div style="color:#ff0000" id="incorrectCred" ></div>
+
+      <br/>
+
+      <div class="clearfix">
+        <button type="submit" class="loginbtn button" onclick="login()">Login</button>
+        <button type="button" class="cancelbtn button" onclick="cancel()">Cancel</button>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- SIGN UP -->
+
+  <div class="signupColumn">
+    <div class="imgcontainer">
+      <img src="http://www.signupsoftware.com/en/assets/Signup-logotype-V1.png" alt="signup" width="280" height="80">
+    </div>
+
+    <div class="container">
+      <label><b>Username</b></label>
+      <br/>
+      <input id="uname1" type="text" placeholder="Username" name="username" required>
+      <br/>
+      <br/>
+
+      <label><b>Firstname</b></label>
+      <br/>
+      <input id="fname1" type="text" placeholder="Enter First name" name="fname" required>
+      <br/>
+      <br/>
+
+      <label><b>Lastname</b></label>
+      <br/>
+      <input id="lname1" type="text" placeholder="Enter Last name" name="lname" required>
+      <br/>
+      <br/>
+
+      <label><b>Password</b></label>
+      <br/>
+      <input id="pswd1" type="password" placeholder="Enter Password" name="psw" required>
+      <br/>
+      <br/>
+
+      <label><b>Repeat Password</b></label>
+      <br/>
+      <input id="pswd11" type="password" placeholder="Repeat Password" name="psw-repeat" required>
+      <br/>
+      <br/>
+
+      <div style="color:#ff0000" id="unameExist" ></div>
+
+      <div class="clearfix">
+
+        <button type="submit" class="signupbtn button" onclick="signup()">Sign Up</button>
+        <button type="button" class="cancelbtn button" onclick="cancel()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="mainpage"  style="display:none"> 
+ <div class="container">
+   <div class="panel-group">
+     <div class="panel panel-info">
+      <div class="panel-heading">
+        <h1 class="fontfamily"><strong>Cloud Cabinet</strong></h1>
+      </div>    
+      <div class="panel-body">
+        <div class="welcome" id="fname"></div>
+        <br />
+        <div id="app"></div>
+        <br/>
+        <div class="footer">* Update: Please download and re-upload the same file to update.</div>
+      </div>
+    </div> 
+  </div>
+
+</div> 
+</div>
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
