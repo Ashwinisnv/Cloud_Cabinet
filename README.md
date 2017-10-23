@@ -124,7 +124,7 @@ Cloud Cabinet provide a place web UI on browser that leverages the users stores 
 Note: Username is not case sensitive and password is case sensitive.
 
 
-![Alt text](img1.jpg?raw=true)
+![Alt text](/img1.jpg?raw=true)
 
 
 Fig 1. Login and Signup Page for Cloud Cabinet application
@@ -152,7 +152,7 @@ The list contains the below fields for each of the uploaded file:
 
 	
 	
-![Alt text](img2.jpg?raw=true)
+![Alt text](/img2.jpg?raw=true)
 
  
                                          Fig 2. Main page of Cloud Cabinet application for CRUD operations
