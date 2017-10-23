@@ -127,7 +127,7 @@ Note: Username is not case sensitive and password is case sensitive.
 ![Alt text](/img1.png?raw=true)
 
 
-Fig 1. Login and Signup Page for Cloud Cabinet application
+		Fig 1. Login and Signup Page for Cloud Cabinet application
 
 - **Upload:** Once the user is authenticated successfully he is taken to the main page where he can upload the files. Here, user have to choose/browse the file he wishes to upload to cloud and then enter a file description and clicks on &#39;Upload&#39; button. If upload is successful, the application displays a successfully uploaded message.
 
@@ -156,5 +156,5 @@ The list contains the below fields for each of the uploaded file:
 
 
  
-                                         Fig 2. Main page of Cloud Cabinet application for CRUD operations
+                Fig 2. Main page of Cloud Cabinet application for CRUD operations
 
