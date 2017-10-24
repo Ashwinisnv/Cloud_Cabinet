@@ -15,7 +15,7 @@
 *   Course				: [Cloud Technologies](http://info.sjsu.edu/web-dbgen/catalog/courses/CMPE281.html).
 *   Professor				: [Sanjay Garje](https://www.linkedin.com/in/sanjaygarje/).
 *   ISA					: [Divyankitha Urs](https://www.linkedin.com/in/divyankithaurs/).
-*   Student				: [Ashwini Shankar Narayan](www.linkedin.com/in/ashwinisnv/).
+*   Student				: [Ashwini Shankar Narayan](https://www.linkedin.com/in/ashwinisnv/).
 
 ## Instruction and Installation Setup
 
